@@ -1,0 +1,27 @@
+{
+  "name": "parrot",
+  "version": "6.0.0",
+  "description": "The One True Better Parrot",
+  "main": "parrot.js",
+  "bin": {
+      "volaparrot": "./parrot.js"
+  },
+  "repository": "https://github.com/RealDolos/node-parrot",
+  "scripts": {
+    "start": "node ."
+  },
+  "keywords": [
+    "volafile",
+    "parrot",
+    "bot"
+  ],
+  "author": "RealDolos",
+  "license": "MIT",
+  "dependencies": {
+    "colors": "^1.1.2",
+    "loglevel": "^1.5.1",
+    "lru-cache": "^4.1.1",
+    "moment": "^2.19.0",
+    "sqlite": "^2.8.0"
+  }
+}
