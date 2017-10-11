@@ -1,10 +1,10 @@
 {
   "name": "parrot",
-  "version": "6.0.0",
+  "version": "6.0.1",
   "description": "The One True Better Parrot",
   "main": "parrot.js",
   "bin": {
-      "volaparrot": "./parrot.js"
+    "volaparrot": "./parrot.js"
   },
   "repository": "https://github.com/RealDolos/node-parrot",
   "scripts": {
