@@ -26,7 +26,7 @@ class ChatCommand extends Command {
     if (this.aliases) {
       cmd = this.aliases.get(cmd) || cmd;
     }
-    cmd = cmd.replace(/^[.!_-]+/, "");
+    cmd = cmd.replace(/^[:.!_-]+/, "");
     const scmd = `handle_${cmd}`;
     if (scmd in this) {
       return this[scmd](room, remainder, msg);

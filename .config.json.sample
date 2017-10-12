@@ -2,6 +2,10 @@
   "nick": "Parrot",
   "blacked": ["MercWMouth", "Deadpool", "bot"],
   "obamas": ["Counselor", "Briseis", "Brisis", "GuppyLord"],
+  "commands": [
+    "defaults",
+    {"cmd": "ripperoni", "options": { "rippers": ["kek"] } }
+  ],
   "rooms": [
     {
       "room": "https://volafile.org/r/e52h2jb4",

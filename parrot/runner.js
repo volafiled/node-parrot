@@ -175,10 +175,8 @@ class Runner extends ManyRooms {
   }
 
   async run() {
-    const commands = ["../commands/defaults"];
-    const {commands: additional = []} = this.config;
+    const {commands = []} = this.config;
     delete this.config.commands;
-    commands.push(...additional);
     await this.handler.loadAdditionalCommands(commands, this.config);
 
     await super.init(this.passwd);
