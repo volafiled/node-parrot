@@ -1,5 +1,6 @@
 "use strict";
 
+require("moment-duration-format");
 const LRU = require("lru-cache");
 const {sleep, deadline} = require("volapi/lib/util");
 

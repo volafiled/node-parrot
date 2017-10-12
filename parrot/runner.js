@@ -13,6 +13,7 @@ class CommandHandler {
     this.always = new Set();
     this.files = new Set();
     this.pulses = new Set();
+    this.intervals = [];
   }
 
   registerChatCommand(cmd, always) {
@@ -60,31 +61,21 @@ class CommandHandler {
       }
       const {cmd, options} = def;
       const coptions = Object.assign({log}, defaults, options);
-      try {
-        await require(cmd)(this, coptions);
-      }
-      catch (ex) {
-        if (!cmd.includes(".")) {
-          try {
-            await require("../commands/{cmd}")(this, coptions);
-            continue;
-          }
-          catch (iex) {
-            // ignored
-          }
-        }
-        throw ex;
-      }
+      await Promise.resolve().then(() => require(cmd)(this, coptions)).
+        catch(() => require.main.require(cmd)(this, coptions)).
+        catch(() => require.main.require(`./commands/${cmd}`)(this, coptions)).
+        catch(() => require(`${process.cwd()}/${cmd}`)(this, coptions)).
+        catch(() => require(`${process.cwd()}/node_modules/${cmd}`)(this, coptions));
     }
   }
 
   startPulse() {
-    Array.from(this.pulses).forEach(cmd => {
+    this.intervals = Array.from(this.pulses).map(cmd => {
       try {
         let interval = cmd.interval | 0;
         interval -= (interval % 100);
         if (!interval) {
-          return;
+          return 0;
         }
         const iid = setInterval(async() => {
           try {
@@ -100,11 +91,17 @@ class CommandHandler {
             log.error("pulse", cmd.toString(), "failed".red, ex);
           }
         }, interval);
+        return iid;
       }
       catch (ex) {
         log.debug(".pulse threw", ex);
       }
-    });
+      return 0;
+    }).filter(e => e);
+  }
+
+  stopPulse() {
+    this.intervals.forEach(i => clearInterval(i));
   }
 }
 
@@ -142,7 +139,7 @@ class BotRoom extends Room {
   }
 
   allowed(msg) {
-    return msg && (!this.botConfig.greenmasterrace || msg.white);
+    return msg && (!this.botConfig.greenmasterrace || !msg.white);
   }
 
   isAdmin(msg) {
@@ -189,10 +186,16 @@ class Runner extends ManyRooms {
     this.on("chat", this.onchat.bind(this));
     this.on("file", this.onfile.bind(this));
     this.handler.startPulse();
-    await super.connect();
+    try {
+      await super.connect();
 
-    log.info("Parrot is now running");
-    return await super.run();
+      log.info("Parrot is now running");
+      await super.run();
+    }
+    finally {
+      this.handler.stopPulse();
+      log.info("Parrot is done running");
+    }
   }
 
   async onfile(room, file) {

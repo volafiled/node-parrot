@@ -7,6 +7,8 @@ const DEFAULTS = [
   "pulse",
   "tard",
   "collector",
+  "web",
+  "info",
 ];
 
 module.exports = function(handler, options) {

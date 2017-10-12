@@ -80,7 +80,7 @@ class ParrotCommands extends ChatCommand {
       }
       await this.db.run(
         "INSERT OR REPLACE INTO phrases VALUES (?, ?, ?, ?)",
-        lookup,
+        lookup.toLowerCase(),
         text,
         room.isAdmin(msg) ? 1 : 0,
         msg.nick
@@ -107,7 +107,7 @@ class ParrotCommands extends ChatCommand {
     try {
       const phrase = await this.db.get(
         "SELECT phrase, owner FROM phrases WHERE phrase = ?",
-        lookup);
+        lookup.toLowerCase());
       room.chat(`${msg.nick}: ${phrase.phrase} was defined by the cuck ${phrase.owner}`);
     }
     catch (ex) {
@@ -126,7 +126,7 @@ class ParrotCommands extends ChatCommand {
       await this.db.run(
         "UPDATE phrases SET locked = ? WHERE phrase = ?",
         lock,
-        lookup,
+        lookup.toLowerCase()
       );
       room.chat("KUK");
     }
@@ -153,7 +153,7 @@ class ParrotCommands extends ChatCommand {
     try {
       await this.db.run(
         "DELETE FROM phrases WHERE phrase = ?",
-        lookup,
+        lookup.toLowerCase()
       );
       room.chat("KUK");
       this.present.clear();
