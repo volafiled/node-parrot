@@ -123,19 +123,19 @@ class CommandHandler {
       await Promise.resolve().then(() => require(cmd)(this, coptions)).
         catch(ex => {
           console.debug(ex);
-          require.main.require(cmd)(this, coptions);
+          return require.main.require(cmd)(this, coptions);
         }).
         catch(ex => {
           console.debug(ex);
-          require.main.require(`./commands/${cmd}`)(this, coptions);
+          return require.main.require(`./commands/${cmd}`)(this, coptions);
         }).
         catch(ex => {
           console.debug(ex);
-          require(`${process.cwd()}/${cmd}`)(this, coptions);
+          return require(`${process.cwd()}/${cmd}`)(this, coptions);
         }).
         catch(ex => {
           console.debug(ex);
-          require(`${process.cwd()}/node_modules/${cmd}`)(this, coptions);
+          return require(`${process.cwd()}/node_modules/${cmd}`)(this, coptions);
         });
     }
   }
