@@ -174,6 +174,37 @@ class FourChin extends URLInfo {
   }
 }
 
+class Urban extends ChatCommand {
+  get handlers() {
+    return "!ud";
+  }
+
+  async handle_ud(room, remainder, msg) {
+    if (!room.allowed(msg)) {
+      return true;
+    }
+    remainder = remainder.trim().toLowerCase();
+    if (!remainder) {
+      return true;
+    }
+    const r = await request.json.get({
+      url: "https://api.urbandictionary.com/v0/define",
+      qs: { term: remainder }
+    });
+    if (!r || !r.list || !r.list.length) {
+      return true;
+    }
+    const [def] = r.list;
+    if (def.permalink) {
+      room.chat(def.permalink);
+    }
+    if (def.definition) {
+      room.chat(def.definition);
+    }
+    return true;
+  }
+}
+
 module.exports = async (handler, options) => {
   let {boards} = await request.json.get("https://a.4cdn.org/boards.json");
   boards = new Map(boards.map(e => {
@@ -185,4 +216,5 @@ module.exports = async (handler, options) => {
   handler.registerChatCommand(new GithubIssues(options));
   handler.registerChatCommand(new LiveLeak(options));
   handler.registerChatCommand(new FourChin(options, boards));
+  handler.registerChatCommand(new Urban(options));
 };
