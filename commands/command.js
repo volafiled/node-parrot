@@ -3,7 +3,6 @@
 class Command {
   constructor(options = {}) {
     this.options = options;
-    this.log = options.log;
   }
 
   get disabled() {
@@ -12,7 +11,7 @@ class Command {
 
   toString() {
     const {constructor: {name = "Unknown"}} = this;
-    return `<Command(${name})>`;
+    return name;
   }
 }
 

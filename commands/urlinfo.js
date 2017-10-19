@@ -1,26 +1,13 @@
 "use strict";
 
-const {AllHtmlEntities: entities} = require("html-entities");
 const {ChatCommand} = require("./command");
 
 const request = require.main.require("./parrot/request");
 
-const {Cooldown} = require.main.require("./parrot/utils");
+const {Cooldown, decodeHTML} = require.main.require("./parrot/utils");
 
 const {PromisePool} = require.main.require("./parrot/pool");
 const POOL = new PromisePool(5);
-
-function decode(str, times = 1) {
-  for (let i = 0; i < Math.max(1, times); ++i) {
-    try {
-      str = entities.decode(str);
-    }
-    catch (ex) {
-      break;
-    }
-  }
-  return str;
-}
 
 class URLInfo extends ChatCommand {
   constructor(options) {
@@ -47,7 +34,7 @@ class URLInfo extends ChatCommand {
         }
       }
       catch (ex) {
-        this.log.error("Failed to process url", url, ex);
+        console.error("Failed to process url", url, ex);
       }
     }
     return false;
@@ -63,4 +50,4 @@ class URLInfo extends ChatCommand {
   }
 }
 
-module.exports = { URLInfo, decode, request };
+module.exports = { URLInfo, decodeHTML, request };

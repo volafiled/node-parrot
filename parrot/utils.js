@@ -1,6 +1,7 @@
 "use strict";
 
 require("moment-duration-format");
+const {AllHtmlEntities: entities} = require("html-entities");
 const LRU = require("lru-cache");
 const {sleep, deadline} = require("volapi/lib/util");
 
@@ -37,8 +38,22 @@ function shuffle(array) {
   }
 }
 
+function decodeHTML(str, times = 1) {
+  for (let i = 0; i < Math.max(1, times); ++i) {
+    try {
+      str = entities.decode(str);
+    }
+    catch (ex) {
+      break;
+    }
+  }
+  return str;
+}
+
+
 
 module.exports = {
+  decodeHTML,
   sleep,
   deadline,
   LRU,

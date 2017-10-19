@@ -8,7 +8,7 @@ class Parrot extends ChatCommand {
   constructor(...args) {
     super(...args);
     this.db = null;
-    getDB().then(db => this.db = db).catch(this.log.error);
+    getDB().then(db => this.db = db).catch(console.error);
   }
 
   handles(room, cmd) {
@@ -33,7 +33,7 @@ class Parrot extends ChatCommand {
       }
     }
     catch (ex) {
-      this.log.error(ex);
+      console.error(ex);
     }
     return false;
   }
@@ -43,7 +43,7 @@ class ParrotCommands extends ChatCommand {
   constructor(...args) {
     super(...args);
     this.db = null;
-    getDB().then(db => this.db = db).catch(this.log.error);
+    getDB().then(db => this.db = db).catch(console.error);
     this.present = new Map();
     this.phrasing = false;
   }
@@ -89,7 +89,7 @@ class ParrotCommands extends ChatCommand {
       this.present.clear();
     }
     catch (ex) {
-      this.log.error("Failed to define:", remainder, ex);
+      console.error("Failed to define:", remainder, ex);
       room.chat(`I'm afraid I cannot do that, ${msg.nick}!`);
     }
     return true;
@@ -111,7 +111,7 @@ class ParrotCommands extends ChatCommand {
       room.chat(`${msg.nick}: ${phrase.phrase} was defined by the cuck ${phrase.owner}`);
     }
     catch (ex) {
-      this.log.error("Failed to who:", remainder, ex);
+      console.error("Failed to who:", remainder, ex);
       room.chat(`I'm afraid I cannot do that, ${msg.nick}!`);
     }
     return true;
@@ -131,7 +131,7 @@ class ParrotCommands extends ChatCommand {
       room.chat("KUK");
     }
     catch (ex) {
-      this.log.error("Failed to change lock:", remainder, ex);
+      console.error("Failed to change lock:", remainder, ex);
       room.chat(`I'm afraid I cannot do that, ${msg.nick}!`);
     }
     return true;
@@ -159,7 +159,7 @@ class ParrotCommands extends ChatCommand {
       this.present.clear();
     }
     catch (ex) {
-      this.log.error("Failed to undef:", remainder, ex);
+      console.error("Failed to undef:", remainder, ex);
       room.chat(`I'm afraid I cannot do that, ${msg.nick}!`);
     }
     return true;
@@ -192,7 +192,7 @@ class ParrotCommands extends ChatCommand {
       this.present.set(room.id, fid);
     }
     catch (ex) {
-      this.log.error("Failed to phrases:", ex);
+      console.error("Failed to phrases:", ex);
       room.chat(`I'm afraid I cannot do that, ${msg.nick}!`);
     }
     finally {

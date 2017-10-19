@@ -1,11 +1,12 @@
 "use strict";
 
 const moment = require("moment");
-const {URLInfo, decode, request} = require("./urlinfo");
+const {URLInfo, decodeHTML, request} = require("./urlinfo");
+const {ChatCommand} = require("./command");
 const sanitizeHTML = require("sanitize-html");
 
 function sanitize(str, times) {
-  return decode(sanitizeHTML(str, {
+  return decodeHTML(sanitizeHTML(str, {
     allowedAttributes: [],
     allowedTags: ["br"]
   }).replace(/<br.*?>/g, " "), times);
@@ -26,7 +27,7 @@ class Youtube extends URLInfo {
       return false;
     }
     [, title] = title;
-    title = decode(title);
+    title = decodeHTML(title);
     duration = duration && duration[1];
     if (duration) {
       duration = moment.duration(duration);
@@ -54,14 +55,14 @@ class Twitter extends URLInfo {
     if (!title || !desc) {
       return false;
     }
-    [title, desc] = [decode(title[1], 2), decode(desc[1], 2)];
+    [title, desc] = [decodeHTML(title[1], 2), decodeHTML(desc[1], 2)];
     desc = desc.substr(1, desc.length - 2);
     let img;
     const images = [];
     while ((img = this.images.exec(text))) {
       [, img] = img;
       if (img && !img.includes("profile_images")) {
-        images.push(decode(img));
+        images.push(decodeHTML(img));
       }
     }
     text = null;
@@ -87,7 +88,7 @@ class Vimeo extends URLInfo {
     if (!desc) {
       return false;
     }
-    room.chat(`Vimeo: ${decode(desc[1])}`);
+    room.chat(`Vimeo: ${decodeHTML(desc[1])}`);
     return true;
   }
 }
@@ -105,9 +106,9 @@ class LiveLeak extends URLInfo {
     if (!title) {
       return false;
     }
-    title = decode(title[1]).replace("LiveLeak.com - ", "");
+    title = decodeHTML(title[1]).replace("LiveLeak.com - ", "");
     if (desc) {
-      desc = decode(desc[1]);
+      desc = decodeHTML(desc[1]);
       room.chat(`LiveLeak: ${title}\n${desc}`);
     }
     else {

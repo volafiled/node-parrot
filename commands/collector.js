@@ -152,7 +152,7 @@ class Seen extends ChatCommand {
       }
     }
     catch (ex) {
-      this.log.error("Failed to fetch seen", ex);
+      console.error("Failed to fetch seen", ex);
     }
     return true;
   }

@@ -12,7 +12,7 @@ const DEFAULTS = [
 ];
 
 module.exports = function(handler, options) {
-  options.log.info(options);
+  console.debug(options);
   for (const d of DEFAULTS) {
     require(`./${d}`)(handler, options);
   }

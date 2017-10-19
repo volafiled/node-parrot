@@ -32,7 +32,7 @@ class Request extends ChatCommand {
       cooldown.set(msg.lnick);
     }
     catch (ex) {
-      this.log.error("Failed to phrases:", ex);
+      console.error("Failed to phrases:", ex);
       room.chat(`I'm afraid I cannot do that, ${msg.nick}!`);
     }
     return true;

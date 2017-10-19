@@ -1,13 +1,64 @@
 "use strict";
 
-const log = require("loglevel");
 const {Room, ManyRooms} = require("volapi");
+const {util: vautil} = require("volapi");
 const {Cooldown} = require("./utils");
 const {Command} = require("../commands/command");
+
+function parseCommandMap(config) {
+  if (!config) {
+    return new Map();
+  }
+  const rv = [];
+  for (const cmd of Object.keys(config)) {
+    let rooms = config[cmd];
+    if (!Array.isArray(rooms)) {
+      rooms = [rooms];
+    }
+    rv.push([cmd, rooms.map(e => vautil.parseId(e))]);
+  }
+  return new Map(rv);
+}
+
+class CommandWrapper {
+  constructor(name, command, rooms) {
+    let allowed = rooms && new Set(rooms);
+    try {
+      const more = new Set(
+        Array.from(command.rooms).map(e => vautil.parseId(e)));
+      if (allowed) {
+        allowed = new Set(Array.from(allowed).filter(e => more.has(e)));
+      }
+      else {
+        allowed = more;
+      }
+    }
+    catch (ex) {
+      // ignored;
+    }
+
+    this.name = name;
+    this.command = command;
+    this.allowed = allowed;
+    Object.freeze(this);
+  }
+
+  has(room) {
+    return !this.allowed ||
+      this.allowed.has(room.id) || this.allowed.has(room.alias) ||
+      this.allowed.has(room);
+  }
+
+  toString() {
+    return this.name;
+  }
+}
 
 class CommandHandler {
   constructor(mroom) {
     this.config = mroom.config;
+    this.all = new Set();
+    this.commandMap = parseCommandMap(this.config["command-map"]);
     this.commands = new Map();
     this.generic = new Set();
     this.always = new Set();
@@ -16,42 +67,50 @@ class CommandHandler {
     this.intervals = [];
   }
 
-  registerChatCommand(cmd, always) {
-    log.debug(cmd.toString());
+  wrap(cmd, type) {
     if (!(cmd instanceof Command)) {
-      throw new Error("Invalid chat command");
+      throw new Error("Invalid command");
     }
+    const cname = cmd.toString();
+    const key = `${cname}:${type}`;
+    if (this.all.has(key)) {
+      throw Error("Command already registered");
+    }
+    this.all.add(key);
+    console.debug(cname);
+    const rooms = this.commandMap.get(cname);
+    const wrapper = new CommandWrapper(cname, cmd, rooms);
+    return wrapper;
+  }
+
+  registerChatCommand(cmd, always) {
+    const wrapper = this.wrap(cmd, "chat");
     if (always) {
-      this.always.add(cmd);
+      this.always.add(wrapper);
       return;
     }
     if (!("handlers" in cmd)) {
-      this.generic.add(cmd);
+      this.generic.add(wrapper);
       return;
     }
     let {handlers = []} = cmd;
     if (!Array.isArray(handlers)) {
       handlers = Array.of(handlers);
     }
+    console.debug("handlers", handlers);
     for (const h of handlers) {
-      this.commands.set(h, cmd);
+      this.commands.set(h, wrapper);
     }
   }
 
   registerFileCommand(cmd) {
-    log.debug(cmd.toString());
-    if (!(cmd instanceof Command)) {
-      throw new Error("Invalid file command");
-    }
-    this.files.add(cmd);
+    const wrapper = this.wrap(cmd, "file");
+    this.files.add(wrapper);
   }
 
   registerPulseCommand(cmd) {
-    log.debug(cmd.toString());
-    if (!(cmd instanceof Command)) {
-      throw new Error("Invalid pulse command");
-    }
-    this.pulses.add(cmd);
+    const wrapper = this.wrap(cmd, "pulse");
+    this.pulses.add(wrapper);
   }
 
   async loadAdditionalCommands(cmds, defaults) {
@@ -60,26 +119,38 @@ class CommandHandler {
         def = {cmd: def};
       }
       const {cmd, options} = def;
-      const coptions = Object.assign({log}, defaults, options);
+      const coptions = Object.assign({}, defaults, options);
       await Promise.resolve().then(() => require(cmd)(this, coptions)).
-        catch(() => require.main.require(cmd)(this, coptions)).
-        catch(() => require.main.require(`./commands/${cmd}`)(this, coptions)).
-        catch(() => require(`${process.cwd()}/${cmd}`)(this, coptions)).
-        catch(() => require(`${process.cwd()}/node_modules/${cmd}`)(this, coptions));
+        catch(ex => {
+          console.debug(ex);
+          require.main.require(cmd)(this, coptions);
+        }).
+        catch(ex => {
+          console.debug(ex);
+          require.main.require(`./commands/${cmd}`)(this, coptions);
+        }).
+        catch(ex => {
+          console.debug(ex);
+          require(`${process.cwd()}/${cmd}`)(this, coptions);
+        }).
+        catch(ex => {
+          console.debug(ex);
+          require(`${process.cwd()}/node_modules/${cmd}`)(this, coptions);
+        });
     }
   }
 
   startPulse() {
     this.intervals = Array.from(this.pulses).map(cmd => {
       try {
-        let interval = cmd.interval | 0;
+        let interval = cmd.command.interval | 0;
         interval -= (interval % 100);
         if (!interval) {
           return 0;
         }
         const iid = setInterval(async() => {
           try {
-            let res = cmd.pulse();
+            let res = cmd.command.pulse();
             if (res && res.then) {
               res = await res;
             }
@@ -88,13 +159,13 @@ class CommandHandler {
             }
           }
           catch (ex) {
-            log.error("pulse", cmd.toString(), "failed".red, ex);
+            console.error("pulse", cmd.toString(), "failed".red, ex);
           }
         }, interval);
         return iid;
       }
       catch (ex) {
-        log.debug(".pulse threw", ex);
+        console.debug(".pulse threw", ex);
       }
       return 0;
     }).filter(e => e);
@@ -111,11 +182,11 @@ function toLower(arr) {
 
 class BotRoom extends Room {
   constructor(room, nick, options) {
-    log.debug("constructor", room, nick, options);
+    console.debug("constructor", room, nick, options);
     super(room, nick, options);
     const {botConfig = {}} = options;
     this.botConfig = botConfig;
-    log.debug("inited room with config", botConfig);
+    console.debug("inited room with config", botConfig);
   }
 
   get active() {
@@ -126,11 +197,14 @@ class BotRoom extends Room {
     return `${str[0]}\u2060${str.substr(1)}`;
   }
 
-  chat(...args) {
+  chat(msg, ...args) {
+    if (msg.length > 298) {
+      msg = `${msg.substr(0, 298)}…`;
+    }
     if (!this.active) {
       return;
     }
-    super.chat(...args);
+    super.chat(msg, ...args);
   }
 
   chatNick(msg, maybeNick, text) {
@@ -178,10 +252,12 @@ class Runner extends ManyRooms {
 
     await super.init(this.passwd);
     this.on("close", (room, reason) => {
-      log.info("Room", room.toString().bold, "closed, because", reason.yellow);
+      console.info(
+        "Room", room.toString().bold, "closed, because", reason.yellow);
     });
     this.on("error", (room, reason) => {
-      log.info("Room", room.toString().bold, "errored, because", reason.red);
+      console.info(
+        "Room", room.toString().bold, "errored, because", reason.red);
     });
     this.on("chat", this.onchat.bind(this));
     this.on("file", this.onfile.bind(this));
@@ -189,20 +265,23 @@ class Runner extends ManyRooms {
     try {
       await super.connect();
 
-      log.info("Parrot is now running");
+      console.info("Parrot is now running");
       await super.run();
     }
     finally {
       this.handler.stopPulse();
-      log.info("Parrot is done running");
+      console.info("Parrot is done running");
     }
   }
 
   async onfile(room, file) {
-    log.debug("file", room.toString(), file.toString());
-    for (const command of this.handler.files) {
+    console.debug("file", file.toString());
+    for (const handler of this.handler.files) {
       try {
-        let res = command.onfile(room, file);
+        if (!handler.has(room)) {
+          continue;
+        }
+        let res = handler.command.onfile(room, file);
         if (res && res.then) {
           res = await res;
         }
@@ -211,7 +290,7 @@ class Runner extends ManyRooms {
         }
       }
       catch (ex) {
-        log.error("File handler", command.toString(), "threw", ex);
+        console.error("File handler", handler.toString(), "threw", ex);
       }
     }
   }
@@ -220,26 +299,30 @@ class Runner extends ManyRooms {
     if (msg.self || msg.system) {
       return;
     }
-    log.debug("msg", room.toString(), msg.toString());
+    console.info("msg", msg.toString());
     msg.lnick = msg.nick.toLowerCase();
 
     const always = [];
-    for (const command of this.handler.always) {
+    for (const handler of this.handler.always) {
       try {
-        always.push(command.handle(room, msg));
+        if (!handler.has(room)) {
+          continue;
+        }
+        always.push(handler.command.handle(room, msg));
       }
       catch (ex) {
-        log.error("Always handler", command.toString(), "threw", ex);
+        console.error("Always handler", handler.toString(), "threw", ex);
       }
     }
 
-    if (this.config.blacked.some(e => msg.lnick.includes(e))) {
-      log.info("Ignored message from BLACKED", msg.nick);
+    if (this.config.blacked.some(e => msg.lnick.includes(e)) &&
+      msg.lnick !== "modchatbot") {
+      console.info("Ignored message from BLACKED", msg.nick);
       return;
     }
     if (this.config.obamas.some(e => msg.lnick.includes(e))) {
       if (this.obamas.has(msg.lnick)) {
-        log.info("Ignored message from OBAMA", msg.nick);
+        console.info("Ignored message from OBAMA", msg.nick);
         return;
       }
       this.obamas.set(msg.lnick);
@@ -252,10 +335,10 @@ class Runner extends ManyRooms {
       }
 
       const specific = this.handler.commands.get(cmd);
-      if (specific) {
+      if (specific && specific.has(room)) {
         try {
-          log.debug("calling specific", specific);
-          let res = specific.handle(room, cmd, remainder, msg);
+          console.debug("calling specific", specific);
+          let res = specific.command.handle(room, cmd, remainder, msg);
           if (res && res.then) {
             res = await res;
           }
@@ -264,17 +347,20 @@ class Runner extends ManyRooms {
           }
         }
         catch (ex) {
-          log.error("CommandHandler", specific.toString(), "threw", ex);
+          console.error("CommandHandler", specific.toString(), "threw", ex);
         }
       }
 
-      for (const command of this.handler.generic) {
+      for (const handler of this.handler.generic) {
         try {
-          if (!command.handles(room, cmd)) {
-            log.debug("command does not handle", cmd);
+          if (!handler.has(room)) {
             continue;
           }
-          let res = command.handle(room, cmd, remainder, msg);
+          if (!handler.command.handles(room, cmd)) {
+            console.debug("command does not handle", cmd);
+            continue;
+          }
+          let res = handler.command.handle(room, cmd, remainder, msg);
           if (res && res.then) {
             res = await res;
           }
@@ -283,7 +369,7 @@ class Runner extends ManyRooms {
           }
         }
         catch (ex) {
-          log.error("Handler", command.toString(), "threw", ex);
+          console.error("Handler", handler.toString(), "threw", ex);
         }
       }
     }
@@ -294,7 +380,7 @@ class Runner extends ManyRooms {
         }
       }
       catch (ex) {
-        log.error("Async always threw", ex);
+        console.error("Async always threw", ex);
       }
     }
   }
