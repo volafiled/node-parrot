@@ -178,7 +178,10 @@ class ParrotCommands extends ChatCommand {
           "SELECT phrase, text FROM phrases ORDER BY phrase")).map(e => {
           return `${e.phrase}|${e.text}`;
         }).join("\r\n");
-        const res = await room.uploadFile("phrases.txt", {stream: phrases});
+        const res = await room.uploadFile({
+          name: "phrases.txt",
+          stream: phrases
+        });
         if (!res && !res.id) {
           throw new Error("no file.id");
         }

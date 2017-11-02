@@ -20,10 +20,10 @@ class Request extends ChatCommand {
       return true;
     }
     try {
-      const res = await room.uploadFile(
-        `[REQUEST] ${remainder} - ${msg.nick}`,
-        {stream: `${msg.nick} requested this on ${new Date()}\nEverybody ignored it always`}
-      );
+      const res = await room.uploadFile({
+        name: `[REQUEST] ${remainder} - ${msg.nick}`,
+        stream: `${msg.nick} requested this on ${new Date()}\nEverybody ignored it always`
+      });
       const file = await room.waitFile(res.id);
       if (!file) {
         throw new Error("no file");

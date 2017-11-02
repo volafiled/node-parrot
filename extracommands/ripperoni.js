@@ -98,7 +98,7 @@ class Ripperoni extends ChatCommand {
       }
       let fid;
       try {
-        const {id} = await room.uploadFile(`${tmp}`, {name: fn});
+        const {id} = await room.uploadFile({file: `${tmp}`, name: fn});
         fid = id;
       }
       catch (ex) {
@@ -116,7 +116,7 @@ class Ripperoni extends ChatCommand {
         nn.ext = ext;
         delete nn.base;
         nn = path.format(nn);
-        const {id} = await room.uploadFile(cand, {name: nn});
+        const {id} = await room.uploadFile({file: cand, name: nn});
         fid = id;
       }
       const file = await room.waitFile(fid, 120 * 1000);
