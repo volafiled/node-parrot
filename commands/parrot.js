@@ -68,14 +68,14 @@ class ParrotCommands extends ChatCommand {
     lookup = lookup.trim();
     text = text.trim();
     if (!lookup || lookup.length < 4 || !remainder) {
-      room.post(`${msg.nick}: Your dick is too small!`);
+      room.chat(`${msg.nick}: Your dick is too small!`);
       return true;
     }
     try {
       const phrase = await this.db.get(
         "SELECT text FROM phrases WHERE phrase = ?",
         lookup);
-      if ((!phrase || phrase.locked) && !this.check(room, msg)) {
+      if (phrase && phrase.locked && !this.check(room, msg)) {
         return true;
       }
       await this.db.run(
