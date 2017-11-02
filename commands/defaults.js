@@ -11,9 +11,9 @@ const DEFAULTS = [
   "info",
 ];
 
-module.exports = function(handler, options) {
+module.exports = async function(handler, options) {
   console.debug(options);
   for (const d of DEFAULTS) {
-    require(`./${d}`)(handler, options);
+    await require(`./${d}`)(handler, options);
   }
 };
