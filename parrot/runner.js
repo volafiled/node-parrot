@@ -5,6 +5,11 @@ const {util: vautil} = require("volapi");
 const {Cooldown} = require("./utils");
 const {Command} = require("../commands/command");
 
+function toColoredMsg() {
+  const chan = this.channel ? ` (${this.channel})` : "";
+  return `<${"Message".dim}(${this.room.alias.bold}, ${this.prefix}${this.nick.bold.yellow}${chan.dim.yellow}, ${this.message.cyan.green})>`;
+}
+
 function parseCommandMap(config) {
   if (!config) {
     return new Map();
@@ -296,10 +301,10 @@ class Runner extends ManyRooms {
   }
 
   async onchat(room, msg) {
-    if (msg.self || msg.system) {
+    console.info(toColoredMsg.call(msg));
+    if (msg.self) {
       return;
     }
-    console.info("msg", msg.toString());
     msg.lnick = msg.nick.toLowerCase();
 
     const always = [];
@@ -313,6 +318,9 @@ class Runner extends ManyRooms {
       catch (ex) {
         console.error("Always handler", handler.toString(), "threw", ex);
       }
+    }
+    if (msg.system || msg.channel) {
+      return;
     }
 
     if (this.config.blacked.some(e => msg.lnick.includes(e)) &&

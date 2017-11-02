@@ -2,31 +2,83 @@
 
 require("colors");
 const {format} = require("util");
+const {parse} = require("path");
 
-const CON_PAD = 5;
 const LEVELS = new Map([
   ["critical", 1],
   ["error", 2],
   ["warn", 10],
   ["info", 20],
-  ["log", 20],
   ["debug", 30],
   ["trace", 30],
 ]);
+const MAX_LENGTH = Array.from(LEVELS.keys()).
+  map(e => `[]${e.green}`).
+  reduce((p, c) => Math.max(p, c.length), 0);
+const ALIASES = new Map([
+  ["log", "info"]
+]);
+const NOT = new Set(["index", "lib", "bot"]);
 let level = 0;
 
+function getStack(handler) {
+  const rv = {};
+  Error.captureStackTrace(rv, handler);
+  return rv;
+}
+
+function getActualName(stack) {
+  const {name} = parse(stack);
+  if (!name || NOT.has(name)) {
+    const {dir} = parse(stack);
+    if (dir) {
+      return getActualName(dir);
+    }
+  }
+  return name;
+}
+
+function getName(handler, args) {
+  let {stack = ""} = args.find(e => e && e.stack) || getStack(handler);
+  if (!stack) {
+    return "";
+  }
+  [, stack] = stack.toString().split("\n");
+  if (!stack) {
+    const {stack: fallback = ""} = getStack(handler);
+    [, stack] = fallback.split("\n");
+  }
+  if (!stack) {
+    return "";
+  }
+  const m = stack.match(/\((.+?)\)$/, stack.trim());
+  if (!m) {
+    return stack.trim();
+  }
+  [, stack] = m;
+  return getActualName(stack);
+}
+
 function adoptConsole(console) {
-  function conrebind(m, color) {
+  function conrebind(method, color) {
+    const m = ALIASES.get(method) || method;
     const l = LEVELS.get(m);
-    const p = `[${m.toUpperCase().padEnd(CON_PAD, " ")[color]}]`;
-    const o = console[m];
-    console[m] = (...args) => {
+    const p = `[${m.toUpperCase()[color]}]`.padEnd(MAX_LENGTH);
+    const o = console[method].bind(console);
+    const handler = (...args) => {
       if (l > level) {
         return false;
       }
-      o.call(console, new Date().toString().bold.blue, p, ...args);
+      const date = new Date().toString();
+      try {
+        o(`[${date.bold.blue}]`, `[${getName(handler, args).bold.green}]`.padEnd(30), p, ...args);
+      }
+      catch (ex) {
+        o(`[${date.bold.blue}]`, p, ...args);
+      }
       return true;
     };
+    console[method] = handler;
   }
 
   const log = console.log.bind(console);
@@ -45,7 +97,7 @@ function adoptConsole(console) {
   conrebind("warn", "yellow");
   conrebind("log", "white");
   conrebind("info", "white");
-  conrebind("debug", "gray");
+  conrebind("debug", "dim");
   conrebind("trace", "gray");
 }
 
@@ -64,10 +116,13 @@ module.exports = { adoptConsole, setLevel };
 
 if (require.main === module) {
   console.log("hello");
+  console.info("hello again");
   console.critical("critical");
   console.debug("not visible");
   setLevel("debug");
   console.debug("visible");
+  console.debug("fake", {stack: "fake stack"});
+  console.debug("faker", {stack: {kek: "fake stack"}});
   try {
     setLevel("nah");
   }
