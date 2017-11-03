@@ -64,9 +64,12 @@ class ParrotCommands extends ChatCommand {
     if (!room.allowed(msg)) {
       return false;
     }
-    let [lookup, text = ""] = remainder.split(/\s+(.*)$/);
-    lookup = lookup.trim();
-    text = text.trim();
+    const idx = remainder.indexOf(" ");
+    if (idx < 4) {
+      return false;
+    }
+    const lookup = remainder.substr(0, idx);
+    const text = remainder.substr(idx + 1).trim();
     if (!lookup || lookup.length < 4 || !remainder) {
       room.chat(`${msg.nick}: Your dick is too small!`);
       return true;

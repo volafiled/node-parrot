@@ -337,7 +337,7 @@ class Runner extends ManyRooms {
     }
 
     try {
-      const [cmd = "", remainder = ""] = msg.message.split(/\s+(.*)$/);
+      const [cmd = "", remainder = ""] = msg.message.split(/\s+((?:.|\n)*)$/);
       if (!cmd) {
         return;
       }
