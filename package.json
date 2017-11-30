@@ -29,6 +29,6 @@
     "sanitize-html": "^1.14.1",
     "sqlite": "^2.8.0",
     "uuid": "^3.1.0",
-    "volapi": "^0.6.3"
+    "volapi": "^0.8.0"
   }
 }
