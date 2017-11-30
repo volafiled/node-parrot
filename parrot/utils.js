@@ -20,8 +20,53 @@ class Cooldown extends LRU {
     return false;
   }
 
+  get() {
+    throw new Error("no getting");
+  }
+
   set(key) {
     super.set(key, Date.now());
+  }
+}
+
+class CountedCooldown extends LRU {
+  constructor(timeout, max = 50) {
+    super(max);
+    this.timeout = timeout || 10 * 60 * 1000;
+  }
+
+  has() {
+    throw new Error("no hassing");
+  }
+
+  get(key) {
+    const to = super.get(key);
+    if (!to) {
+      return 0;
+    }
+    if (to.date + this.timeout <= Date.now()) {
+      super.del(key);
+      return 0;
+    }
+    return to.count;
+  }
+
+  bump(key) {
+    const to = super.get(key);
+    if (!to) {
+      super.set(key, {count: 1, date: Date.now()});
+      return 1;
+    }
+    if (to.date + this.timeout <= Date.now()) {
+      to.date = Date.now();
+      to.count = 1;
+      return 1;
+    }
+    return ++to.count;
+  }
+
+  set() {
+    throw new Error("no setting");
   }
 }
 
@@ -59,5 +104,6 @@ module.exports = {
   LRU,
   randint,
   shuffle,
-  Cooldown
+  Cooldown,
+  CountedCooldown
 };

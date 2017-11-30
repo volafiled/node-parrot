@@ -2,7 +2,7 @@
 
 const {Room, ManyRooms} = require("volapi");
 const {util: vautil} = require("volapi");
-const {Cooldown} = require("./utils");
+const {Cooldown, CountedCooldown} = require("./utils");
 const {Command} = require("../commands/command");
 
 function toColoredMsg() {
@@ -246,7 +246,8 @@ class Runner extends ManyRooms {
     delete this.config.options;
     delete this.config.passwd;
 
-    this.obamas = new Cooldown(10 * 1000);
+    this.obamas = new Cooldown(10 * 60 * 1000);
+    this.cooling = new CountedCooldown(2 * 60 * 1000);
     this.handler = new CommandHandler(this);
   }
 
@@ -301,6 +302,20 @@ class Runner extends ManyRooms {
     }
   }
 
+  idFromMsg(msg) {
+    const who = msg.green ?
+      msg.lnick :
+      msg.ip || `${msg.prefix}${msg.lnick}`;
+    return who;
+  }
+
+  markCommand(msg) {
+    if (msg.purple) {
+      return;
+    }
+    this.cooling.bump(this.idFromMsg(msg));
+  }
+
   async onchat(room, msg) {
     console.info(toColoredMsg.call(msg));
     if (msg.self) {
@@ -336,6 +351,10 @@ class Runner extends ManyRooms {
       }
       this.obamas.set(msg.lnick);
     }
+    if (!msg.purple && this.cooling.get(this.idFromMsg(msg)) >= 3) {
+      console.info("Ignored message from cooling", msg.nick);
+      return;
+    }
 
     try {
       const [cmd = "", remainder = ""] = msg.message.split(/\s+((?:.|\n)*)$/);
@@ -352,6 +371,7 @@ class Runner extends ManyRooms {
             res = await res;
           }
           if (res === true) {
+            this.markCommand(msg);
             return;
           }
         }
@@ -374,6 +394,7 @@ class Runner extends ManyRooms {
             res = await res;
           }
           if (res === true) {
+            this.markCommand(msg);
             return;
           }
         }

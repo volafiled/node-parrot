@@ -22,6 +22,9 @@ class Parrot extends ChatCommand {
     if (!room.allowed(msg)) {
       return false;
     }
+    if (!msg.purple && remainder.length > 30) {
+      return false;
+    }
     try {
       const lookup = cmd.substr(1).toLowerCase();
       const phrase = await this.db.get(
