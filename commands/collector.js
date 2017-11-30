@@ -6,12 +6,20 @@ const {ChatCommand} = require("./command");
 
 const {getDB} = require.main.require("./parrot/db");
 
+const TO_LOG = new Map([
+  ["mercwmouth", "merc"],
+  ["deadpool", "merc"],
+  ["red", "red"],
+  ["lmmortal", "spencer"],
+  ["macauhai", "soggy"],
+]);
+
 async function setupDB() {
   const db = await sqlite.open("merc.db", {Promise});
-  await db.run(
-    "CREATE TABLE IF NOT EXISTS merc (ts INT PRIMARY KEY, msg TEXT)");
-  await db.run(
-    "CREATE TABLE IF NOT EXISTS red (ts INT PRIMARY KEY, msg TEXT)");
+  for (const name of TO_LOG.values()) {
+    await db.run(
+      `CREATE TABLE IF NOT EXISTS ${name} (ts INT PRIMARY KEY, msg TEXT)`);
+  }
   return db;
 }
 
@@ -22,7 +30,6 @@ async function setupSeen() {
   return db;
 }
 
-const MERC = new Set(["mercwmouth", "deadpool"]);
 const ALIASES = new Map([
   ["auxo's waifu", "triggu"],
   ["doiosodolos", "Daniel"],
@@ -76,15 +83,14 @@ class Collector extends ChatCommand {
   }
 
   async handle(room, msg) {
-    if (!msg.white && MERC.has(msg.lnick)) {
-      await this.db.run(
-        "INSERT INTO merc VALUES(?, ?)",
-        Date.now(), msg.message.trim());
-    }
-    if (!msg.white && msg.lnick === "red") {
-      await this.db.run(
-        "INSERT INTO red VALUES(?, ?)",
-        Date.now(), msg.message.trim());
+    if (!msg.white) {
+      const db = TO_LOG.get(msg.lnick);
+      if (db) {
+        await this.db.run(
+          `INSERT INTO ${db} VALUES(?, ?)`,
+          Date.now(), msg.message.trim());
+        console.debug("logged to", db);
+      }
     }
     const corrected = ALIASES.get(msg.lnick) || msg.lnick;
     const add = [corrected];
