@@ -87,12 +87,12 @@ class Ripperoni extends ChatCommand {
       fn = fn.trim();
       room.chat(`▶︎ ${fn}`);
       try {
-        console.debug(await this.run_process(
+        console.error(await this.run_process(
           "youtube-dl", "--ignore-config", "-o", tmp, "-c", "--no-part",
           ...options, url));
       }
       catch (ex) {
-        console.debug(await this.run_process(
+        console.error(await this.run_process(
           "youtube-dl", "--ignore-config", "-o", `${tmp}.%(ext)s`, "-c", "--no-part",
           ...options, url));
       }
