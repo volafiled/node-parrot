@@ -35,6 +35,6 @@ async function run(config) {
   console.debug("set level to", ll);
   for (;;) {
     await run(config);
-    await sleep(60 * 1000);
+    await sleep(10 * 1000);
   }
 })().catch(ex => console.error("Parroting failed", ex));
