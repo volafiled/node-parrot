@@ -285,6 +285,7 @@ class Runner extends ManyRooms {
       console.info("Parrot is closing");
     }
     finally {
+      this.removeAllListeners();
       this.handler.stopPulse();
       console.info("Parrot is done running");
     }
