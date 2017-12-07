@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 "use strict";
 
-const {setLevel} = require("./parrot/loglevel");
+const {setLevel, adoptConsole, ConsoleTee} = require("./parrot/loglevel");
 
 process.on("uncaughtException", function(error) {
   console.critical("Uncaught exception!", error);
@@ -29,6 +29,17 @@ async function run(config) {
 
 (async function main() {
   setLevel("info");
+  const errfile = fs.createWriteStream("errors.log", { flags: "a" });
+  const errors = adoptConsole(new console.Console(errfile), {
+    colors: false,
+    level: "error"
+  });
+  Object.defineProperty(global, "console", {
+    value: new ConsoleTee(console, errors),
+    enumerable: true,
+    configurable: true,
+    writable: true
+  });
   const config = JSON.parse(fs.readFileSync(".config.json"));
   const {loglevel: ll = "info"} = config;
   setLevel(ll);

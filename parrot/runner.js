@@ -125,6 +125,7 @@ class CommandHandler {
       }
       const {cmd, options} = def;
       const coptions = Object.assign({}, defaults, options);
+      console.debug("Attempting to load", cmd);
       await Promise.resolve().then(() => require(cmd)(this, coptions)).
         catch(ex => {
           console.debug(ex);
@@ -249,14 +250,19 @@ class Runner extends ManyRooms {
     this.obamas = new Cooldown(10 * 60 * 1000);
     this.cooling = new CountedCooldown(2 * 60 * 1000);
     this.handler = new CommandHandler(this);
+    console.info("About to run");
   }
 
   async run() {
     const {commands = []} = this.config;
     delete this.config.commands;
+    console.debug("Parrot loading commands...");
     await this.handler.loadAdditionalCommands(commands, this.config);
+    console.debug("Parrot loaded commands");
 
     await super.init(this.passwd);
+    console.debug("Parrot inited main");
+
     this.on("close", (room, reason) => {
       console.info(
         "Room", room.toString().bold, "closed, because", reason.yellow);
@@ -265,10 +271,13 @@ class Runner extends ManyRooms {
       console.info(
         "Room", room.toString().bold, "errored, because", reason.red);
     });
-    this.on("chat", this.onchat.bind(this));
-    this.on("file", this.onfile.bind(this));
+    this.onchat = this.onchat.bind(this);
+    this.onfile = this.onfile.bind(this);
+    this.on("chat", this.onchat);
+    this.on("file", this.onfile);
     this.handler.startPulse();
     try {
+      console.info("Parrot connecting");
       await super.connect();
 
       console.info("Parrot is now running");
