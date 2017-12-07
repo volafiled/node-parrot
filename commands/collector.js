@@ -182,7 +182,7 @@ class Redard extends ChatCommand {
       return false;
     }
     const res = await this.db.get(
-      "SELECT msg FROM red ORDER BY RANDOM() LIMIT 1");
+      "SELECT msg FROM red WHERE LENGTH(msg) > 140 ORDER BY RANDOM() LIMIT 1");
     if (!res) {
       return false;
     }
