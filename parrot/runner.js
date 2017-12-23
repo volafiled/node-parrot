@@ -1,13 +1,28 @@
 "use strict";
 
 const {Room, ManyRooms} = require("volapi");
+const {Message, File} = require("volapi");
 const {util: vautil} = require("volapi");
 const {Cooldown, CountedCooldown} = require("./utils");
 const {Command} = require("../commands/command");
 
-function toColoredMsg() {
-  const chan = this.channel ? ` (${this.channel})` : "";
-  return `<${"Message".dim}(${this.room.alias.bold}, ${this.prefix}${this.nick.bold.yellow}${chan.dim.yellow}, ${this.message.cyan.green})>`;
+class ColoredMessage extends Message {
+  toLogMessage(colors) {
+    if (!colors) {
+      return this.toString();
+    }
+    const chan = this.channel ? ` (${this.channel})` : "";
+    return `<${"Message".dim}(${this.room.alias.bold}, ${this.prefix}${this.nick.bold.yellow}${chan.dim.yellow}, ${this.message.cyan.green})>`;
+  }
+}
+
+class ColoredFile extends File {
+  toLogMessage(colors) {
+    if (!colors) {
+      return this.toString();
+    }
+    return `<${"File".dim}(${this.room.alias.bold}, ${this.uploader.bold.yellow}, ${this.id.green}, ${this.name.cyan})>`;
+  }
 }
 
 function parseCommandMap(config) {
@@ -237,6 +252,8 @@ class Runner extends ManyRooms {
 
     super(config.rooms, config.nick, Object.assign({
       Room: BotRoom,
+      Message: ColoredMessage,
+      File: ColoredFile,
       botConfig: config
     }, config.options));
 
@@ -292,7 +309,7 @@ class Runner extends ManyRooms {
   }
 
   async onfile(room, file) {
-    console.debug("file", file.toString());
+    console.info(file);
     for (const handler of this.handler.files) {
       try {
         if (!handler.has(room)) {
@@ -327,7 +344,7 @@ class Runner extends ManyRooms {
   }
 
   async onchat(room, msg) {
-    console.info(toColoredMsg.call(msg));
+    console.info(msg);
     if (msg.self) {
       return;
     }

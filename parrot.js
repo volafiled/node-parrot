@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 "use strict";
 
-const {setLevel, adoptConsole, ConsoleTee} = require("./parrot/loglevel");
+const fs = require("fs");
+const log = require("./parrot/loglevel");
 
 process.on("uncaughtException", function(error) {
   console.critical("Uncaught exception!", error);
@@ -12,10 +13,7 @@ process.on("unhandledRejection", function(error) {
   process.exit(1);
 });
 
-const fs = require("fs");
 const {Runner} = require("./parrot/runner");
-const {sleep} = require("./parrot/utils");
-
 
 async function run(config) {
   try {
@@ -27,25 +25,29 @@ async function run(config) {
   }
 }
 
-(async function main() {
-  setLevel("info");
+function setupLogging() {
   const errfile = fs.createWriteStream("errors.log", { flags: "a" });
-  const errors = adoptConsole(new console.Console(errfile), {
+  const errors = log.patch(new console.Console(errfile), {
     colors: false,
     level: "error"
   });
-  Object.defineProperty(global, "console", {
-    value: new ConsoleTee(console, errors),
-    enumerable: true,
-    configurable: true,
-    writable: true
-  });
+  log.install(console, errors);
+}
+
+async function main() {
+  setupLogging();
+
   const config = JSON.parse(fs.readFileSync(".config.json"));
+
   const {loglevel: ll = "info"} = config;
-  setLevel(ll);
+  log.setLevel(ll);
   console.debug("set level to", ll);
+
+  const {sleep} = require("./parrot/utils");
+
   for (;;) {
     await run(config);
     await sleep(10 * 1000);
   }
-})().catch(ex => console.error("Parroting failed", ex));
+}
+main().catch(ex => console.error("Parroting failed", ex));
