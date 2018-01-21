@@ -96,8 +96,6 @@ function decodeHTML(str, times = 1) {
   return str;
 }
 
-
-
 module.exports = {
   decodeHTML,
   sleep,

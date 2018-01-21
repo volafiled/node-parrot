@@ -7,7 +7,9 @@ if (!Promise.prototype.finally) {
     finally(cb) {
       return this.then(function(res) {
         const rv = (cb.call && cb.call()) || cb;
-        return Promise.resolve(rv).then(function() { return res; });
+        return Promise.resolve(rv).then(function() {
+          return res;
+        });
       }, function(e) {
         const rv = (cb.call && cb.call()) || cb;
         return Promise.resolve(rv).then(function() {
