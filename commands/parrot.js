@@ -79,8 +79,8 @@ class ParrotCommands extends ChatCommand {
     }
     try {
       const phrase = await this.db.get(
-        "SELECT text FROM phrases WHERE phrase = ?",
-        lookup);
+        "SELECT locked FROM phrases WHERE phrase = ?",
+        lookup.toLowerCase());
       if (phrase && phrase.locked && !this.check(room, msg)) {
         return true;
       }
