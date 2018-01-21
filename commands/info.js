@@ -57,6 +57,10 @@ class CheckMod extends ChatCommand {
         room.chat(`Yes, unfortunately the fag ${res.name} is still a ((moderator))`);
         break;
 
+      case "thejidf":
+        room.chat(`Yes, the lying cheap pussy jew ${res.name} is still a ((moderator))`);
+        break;
+
       case "liquid":
         room.chat("Hell froze over!");
         break;
@@ -99,7 +103,9 @@ class CheckMod extends ChatCommand {
         break;
 
       default:
-        room.chat(`${res.name} is not ((trusted)) at all!`);
+        if (res.name) {
+          room.chat(`${res.name} is not ((trusted)) at all!`);
+        }
         break;
       }
     }
