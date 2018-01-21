@@ -18,7 +18,17 @@ const {Runner} = require("./parrot/main");
 async function run(config) {
   try {
     const runner = new Runner(config);
-    await runner.run();
+    const reap = async () => {
+      console.warn("Received HUP");
+      await runner.close();
+    };
+    process.on("SIGHUP", reap);
+    try {
+      await runner.run();
+    }
+    finally {
+      process.removeListener("SIGHUP", reap);
+    }
   }
   catch (ex) {
     console.error("Parrot ded", ex);
@@ -37,7 +47,7 @@ function setupLogging() {
 async function main() {
   setupLogging();
 
-  const config = JSON.parse(fs.readFileSync(".config.json"));
+  let config = JSON.parse(fs.readFileSync(".config.json"));
 
   const {loglevel: ll = "info"} = config;
   log.setLevel(ll);
@@ -46,6 +56,7 @@ async function main() {
   const {sleep} = require("./parrot/utils");
 
   for (;;) {
+    config = JSON.parse(fs.readFileSync(".config.json"));
     await run(config);
     await sleep(10 * 1000);
   }
