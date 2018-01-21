@@ -309,7 +309,7 @@ class Runner extends ManyRooms {
   }
 
   async onfile(room, file) {
-    console.info(file);
+    console.debug(file);
     for (const handler of this.handler.files) {
       try {
         if (!handler.has(room)) {

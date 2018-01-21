@@ -13,7 +13,7 @@ process.on("unhandledRejection", function(error) {
   process.exit(1);
 });
 
-const {Runner} = require("./parrot/runner");
+const {Runner} = require("./parrot/main");
 
 async function run(config) {
   try {
