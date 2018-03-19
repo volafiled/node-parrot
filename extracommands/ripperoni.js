@@ -98,7 +98,10 @@ class Ripperoni extends ChatCommand {
       }
       let fid;
       try {
-        const {id} = await room.uploadFile({file: `${tmp}`, name: fn});
+        const {id} = await room.uploadAs(msg.nick, {
+          file: `${tmp}`,
+          name: fn
+        });
         fid = id;
       }
       catch (ex) {

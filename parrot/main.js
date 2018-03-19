@@ -240,6 +240,24 @@ class BotRoom extends Room {
   isAdmin(msg) {
     return msg.user && this.botConfig.admins.some(e => e === msg.lnick);
   }
+
+  async uploadAs(nick, ...args) {
+    if (nick === this.nick) {
+      return this.uploadFile(...args);
+    }
+    const params = {};
+    if (this.password) {
+      params.password = this.password;
+    }
+    if (this.key) {
+      params.key = this.key;
+    }
+    const nicked = new Room(this.id, nick, params);
+    await nicked.connect();
+    const rv = await nicked.uploadFile(...args);
+    await nicked.close();
+    return rv;
+  }
 }
 
 class Runner extends ManyRooms {
