@@ -20,8 +20,8 @@ class Cooldown extends LRU {
     return false;
   }
 
-  get() {
-    throw new Error("no getting");
+  get(key) {
+    return super.get(key);
   }
 
   set(key) {
