@@ -1,8 +1,9 @@
 "use strict";
 
 const request = require("request-promise-native");
+const streamrequest = require("request");
 
-const r = module.exports = request.defaults({
+const OPTS = {
   headers: {
     "User-Agent":
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_3) " +
@@ -12,8 +13,13 @@ const r = module.exports = request.defaults({
   timeout: 20 * 1000,
   strictSSL: true,
   gzip: true,
-});
+};
+
+const r = module.exports = request.defaults(OPTS);
+const s = streamrequest.defaults(OPTS);
 Object.assign(r, {
   json: r.defaults({ json: true }),
-  bin: r.defaults({ encoding: null })
+  bin: r.defaults({ encoding: null }),
+  stream: s,
+  streambin: s.defaults({ encoding: null }),
 });
