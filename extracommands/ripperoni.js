@@ -74,7 +74,10 @@ class Ripperoni extends ChatCommand {
     });
   }
 
-  async rip(room, msg, url, ...options) {
+  async rip(room, msg, remainder, ...options) {
+    remainder = remainder.trim();
+    const [url, ...namepieces] = remainder.split(/\s+/);
+    const name = namepieces.map(e => e.trim()).filter(e => e).join(" ").trim();
     if (!url) {
       room.chat(`>No URL\n${msg.nick}, pls`);
       return true;
@@ -85,6 +88,13 @@ class Ripperoni extends ChatCommand {
       let fn = await this.run_process(
         "youtube-dl", "--get-filename", "--ignore-config", ...options, url);
       fn = fn.trim();
+      if (name) {
+        const nn = path.parse(fn);
+        nn.name = name;
+        delete nn.base;
+        fn = path.format(nn);
+      }
+
       room.chat(`▶︎ ${fn}`);
       try {
         console.error(await this.run_process(
