@@ -21,7 +21,8 @@ class ColoredFile extends File {
     if (!colors) {
       return this.toString();
     }
-    return `<${"File".dim}(${this.room.alias.bold}, ${this.uploader.bold.yellow}, ${this.id.green}, ${this.name.cyan})>`;
+    const p = this.fromAccount ? "+" : "";
+    return `<${"File".dim}(${this.room.alias.bold}, ${p}${this.uploader.bold.yellow}, ${this.id.green}, ${this.name.cyan})>`;
   }
 }
 
