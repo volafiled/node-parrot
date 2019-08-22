@@ -13,19 +13,44 @@ const {PromisePool} = require.main.require("./parrot/pool");
 glob = promisify(glob);
 const unlink = promisify(fs.unlink);
 
+const VIDEO_FORMATS = [
+  "bestvideo[height>=3840][ext=mp4]+bestaudio[ext=m4a]",
+  "bestvideo[height>=3840][ext=webm]+bestaudio[ext=webm]",
+  "bestvideo[height>=2160][ext=mp4]+bestaudio[ext=m4a]",
+  "bestvideo[height>=2160][ext=webm]+bestaudio[ext=webm]",
+  "bestvideo[height>=1920][ext=mp4]+bestaudio[ext=m4a]",
+  "bestvideo[height>=1920][ext=webm]+bestaudio[ext=webm]",
+  "bestvideo[height>=1280][ext=mp4]+bestaudio[ext=m4a]",
+  "bestvideo[height>=1280][ext=webm]+bestaudio[ext=webm]",
+  "bestvideo[height>=1080][ext=mp4]+bestaudio[ext=m4a]",
+  "bestvideo[height>=1080][ext=webm]+bestaudio[ext=webm]",
+  "bestvideo[height>=720][ext=mp4]+bestaudio[ext=m4a]",
+  "bestvideo[height>=720][ext=webm]+bestaudio[ext=webm]",
+  "bestvideo[ext=mp4]+bestaudio[ext=m4a]",
+  "bestvideo[ext=webm]+bestaudio[ext=webm]",
+  "best",
+  "bestvideo+bestaudio"
+];
+
 class Ripperoni extends ChatCommand {
   constructor(...args) {
     super(...args);
     const {rippers = []} = this.options;
     this.rippers = new Set(rippers);
     this.run_process = PromisePool.wrapNew(3, this, this.run_process);
+    this.toopus = this.toopus.bind(this);
   }
 
   get handlers() {
-    return ["!ripperoni", "!musiks", "!music"];
+    return ["!ripperoni", "!musiks", "!music", "!opus", "+opus"];
   }
 
   allowed_rip(msg) {
+    /*
+    if (msg.lnick == "bain") {
+      return false;
+    }
+    */
     if (msg.purple) {
       return true;
     }
@@ -44,7 +69,8 @@ class Ripperoni extends ChatCommand {
       room.chat("No rips for you!");
       return true;
     }
-    return this.rip(room, msg, remainder, "-f", "best");
+    return this.rip(room, msg, remainder, null,
+      "-f", VIDEO_FORMATS.join("/"));
   }
 
   handle_musiks(room, remainder, msg) {
@@ -52,7 +78,15 @@ class Ripperoni extends ChatCommand {
       room.chat("No rips for you!");
       return true;
     }
-    return this.rip(room, msg, remainder, "-xf", "bestaudio");
+    return this.rip(room, msg, remainder, null, "-xf", "bestaudio");
+  }
+
+  handle_opus(room, remainder, msg) {
+    if (!this.allowed_rip(msg)) {
+      room.chat("No rips for you!");
+      return true;
+    }
+    return this.rip(room, msg, remainder, this.toopus, "-xf", "bestaudio");
   }
 
   run_process(...args) {
@@ -60,13 +94,16 @@ class Ripperoni extends ChatCommand {
       env: null,
       stdio: ["ignore", "pipe", "inherit"],
     };
+    console.log(args.map(e => `'${e}'`).join(" "));
     const proc = spawn("/usr/bin/env", args, spawnopts);
     const buf = [];
     return new Promise((resolve, reject) => {
       proc.stdout.on("data", data => buf.push(data));
       proc.on("close", code => {
         if (code) {
-          reject(new Error(`Process Exit: ${code}`));
+          const ex = new Error(`Process Exit: ${code}`);
+          ex.data = buf.join("");
+          reject(ex);
         }
         resolve(buf.join(""));
       });
@@ -74,10 +111,42 @@ class Ripperoni extends ChatCommand {
     });
   }
 
-  async rip(room, msg, remainder, ...options) {
+  async toopus(name, file) {
+    const nn = path.parse(name);
+    if (nn.ext === ".opus") {
+      return [name, file];
+    }
+    nn.ext = ".opus";
+    delete nn.base;
+    const fn = path.format(nn);
+    const opus = `${file}.opus`;
+    console.error(await this.run_process(
+      "ffmpeg", "-loglevel", "error",
+      "-i", file,
+      "-map", "a:0", "-c", "libopus",
+      "-f", "opus",
+      opus));
+    return [fn, opus];
+  }
+
+  async rip(room, msg, remainder, cb, ...options) {
     remainder = remainder.trim();
     const [url, ...namepieces] = remainder.split(/\s+/);
-    const name = namepieces.map(e => e.trim()).filter(e => e).join(" ").trim();
+    let name = namepieces.map(e => e.trim()).filter(e => e).join(" ").trim();
+    if (msg.lnick === "dad") {
+      name = name.replace(/realdolos/gi, "dad");
+      name = name.replace(/dolos/gi, "dad");
+      name = name.replace(/ｒｅａｌｄｏｌｏｓ/gi, "ⓓⓐⓓ");
+      name = name.replace(/ⓡⓔⓐⓛⓓⓞⓛⓞⓢ/gi, "ⓓⓐⓓ");
+      name = name.replace("rｅａｌdｏlｏｓ", "dad from Liverpool");
+      name = name.replace("ʳᵉᵃˡᵈᵒˡᵒˢ", "dad from Liverpool");
+    }
+    else if (msg.lnick === "lain") {
+      name = name.replace(/realdolos/gi, "lain");
+      name = name.replace(/dolos/gi, "lain");
+      name = name.replace(/ｒｅａｌｄｏｌｏｓ/gi, "lain");
+      name = name.replace(/ⓡⓔⓐⓛⓓⓞⓛⓞⓢ/gi, "lain");
+    }
     if (!url) {
       room.chat(`>No URL\n${msg.nick}, pls`);
       return true;
@@ -98,7 +167,7 @@ class Ripperoni extends ChatCommand {
       room.chat(`▶︎ ${fn}`);
       try {
         console.error(await this.run_process(
-          "youtube-dl", "--ignore-config", "-o", tmp, "-c", "--no-part",
+          "youtube-dl", "--ignore-config", "-o", `${tmp}`, "-c", "--no-part",
           ...options, url));
       }
       catch (ex) {
@@ -106,32 +175,27 @@ class Ripperoni extends ChatCommand {
           "youtube-dl", "--ignore-config", "-o", `${tmp}.%(ext)s`, "-c", "--no-part",
           ...options, url));
       }
-      let fid;
-      try {
-        const {id} = await room.uploadAs(msg.nick, {
-          file: `${tmp}`,
-          name: fn
-        });
-        fid = id;
+      const cands = await glob(`${tmp}*`);
+      if (!cands.length) {
+        throw new Error("No files");
       }
-      catch (ex) {
-        if (ex.code !== "ENOENT") {
-          throw ex;
-        }
-        const cands = await glob(`${tmp}.*`);
-        if (!cands.length) {
-          throw new Error("No files");
-        }
-        files.push(...cands);
-        const [cand] = cands;
-        const {ext} = path.parse(cand);
-        let nn = path.parse(fn);
+      files.push(...cands);
+      const [cand] = cands;
+      const {ext} = path.parse(cand);
+      let nn = path.parse(fn);
+      if (ext) {
         nn.ext = ext;
-        delete nn.base;
-        nn = path.format(nn);
-        const {id} = await room.uploadFile({file: cand, name: nn});
-        fid = id;
       }
+      delete nn.base;
+      nn = path.format(nn);
+      const [finalName, finalFile] = cb ? (await cb(nn, cand)) : [nn, cand];
+      if (finalFile !== cand) {
+        files.push(finalFile);
+      }
+      const {id: fid} = await room.uploadAs(msg.nick, {
+        file: finalFile,
+        name: finalName
+      });
       const file = await room.waitFile(fid, 120 * 1000);
       if (file) {
         room.chat(`✓ @${file.id}`);
