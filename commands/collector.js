@@ -73,6 +73,12 @@ const ALIASES = new Map([
   ["a terrorist", "bain"],
   ["rapist", "bain"],
   ["a rapist", "bain"],
+  ["paul", "roboCOP"],
+  ["kidney thief", "roboCOP"],
+  ["backslash", "roboCOP"],
+  ["justin", "Liquid"],
+  ["cucksquid", "Liquid"],
+  ["dustbin", "Liquid"],
 ]);
 
 class Collector extends ChatCommand {
@@ -125,6 +131,11 @@ class Seen extends ChatCommand {
     const corrected = remainder.toLowerCase();
     const alias = ALIASES.get(corrected);
     const nick = (alias && alias.toLowerCase()) || corrected;
+    if (corrected === "szeraton" || corrected === "+szeraton" ||
+      corrected === "@szeraton") {
+      room.chat(`${remainder} is some turkish troll or something. idk, idc. Why would you?`);
+      return true;
+    }
     if (corrected === "lain" || corrected === "+lain") {
       room.chat(`${remainder} was never here, will never come here, and does not care about volafile at all!\nPlease donate!!!`);
       return true;
@@ -146,6 +157,11 @@ class Seen extends ChatCommand {
       case "auxo":
         add = "\nHe is still a black seribain cuck!";
         break;
+
+      case "red":
+        add = " in a school near you!";
+        break;
+
       default:
         break;
       }
