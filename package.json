@@ -1,6 +1,6 @@
 {
   "name": "parrot",
-  "version": "6.2.0",
+  "version": "6.3.0",
   "description": "The One True Better Parrot",
   "main": "parrot.js",
   "bin": {
