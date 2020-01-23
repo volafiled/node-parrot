@@ -2,6 +2,10 @@
 
 const request = require("request-promise-native");
 const streamrequest = require("request");
+const {FileCookieStore} = require("./file-cookie-store");
+
+const store = new FileCookieStore(".cookies.json");
+store.load().catch(console.warn);
 
 const OPTS = {
   headers: {
@@ -13,6 +17,7 @@ const OPTS = {
   timeout: 20 * 1000,
   strictSSL: true,
   gzip: true,
+  jar: request.jar(store),
 };
 
 const r = module.exports = request.defaults(OPTS);
