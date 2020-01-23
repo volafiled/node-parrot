@@ -21,8 +21,11 @@ class Youtube extends URLInfo {
   }
 
   async onurl(room, url) {
-    let [, title, duration] = await this.extract(
+    console.debug(url);
+    const data = await this.extract(
       url, this.title, this.duration);
+    console.debug(url, data);
+    let [, title, duration] = data;
     if (!title) {
       return false;
     }
