@@ -35,7 +35,8 @@ const VIDEO_FORMATS = [
 class Ripperoni extends ChatCommand {
   constructor(...args) {
     super(...args);
-    const {rippers = []} = this.options;
+    const {rippers = [], source = null} = this.options;
+    this.source = source;
     this.rippers = new Set(rippers);
     this.run_process = PromisePool.wrapNew(3, this, this.run_process);
     this.toopus = this.toopus.bind(this);
@@ -150,6 +151,9 @@ class Ripperoni extends ChatCommand {
     if (!url) {
       room.chat(`>No URL\n${msg.nick}, pls`);
       return true;
+    }
+    if (this.source) {
+      options.unshift(`--source-address=${this.source}`);
     }
     const tmp = `ripperoni-${uuid()}`;
     const files = [tmp];
