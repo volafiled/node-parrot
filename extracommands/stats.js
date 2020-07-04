@@ -95,9 +95,11 @@ class Datamap extends Map {
     let clen = rv[0].length;
     let idx = 1;
     const values = Array.from(this.values());
-    values.sort((a, b) => a.total - b.total);
+    values.sort((a, b) => b.total - a.total);
     for (let p of values) {
-      const m = `#${idx++} ${p.metric}: ${formatSize(p.total)} (${fmt0(p.values.length)}, Ø${formatSize(p.avg)})`;
+      const m = p.values.length > 1 ?
+        `#${idx++} ${p.metric}: ${formatSize(p.total)} (${fmt0(p.values.length)}, Ø${formatSize(p.avg)})` :
+        `#${idx++} ${p.metric}: ${formatSize(p.total)}`;
       const alen = (rv.length) * 2 + clen + m.length;
       if (alen > maxlen) {
         break;
@@ -129,7 +131,7 @@ class StatsCommand extends ChatCommand {
         mapped.set("WHITE", file.size);
       }
       else {
-        mapped.set(file.uploader, file.size);
+        mapped.set(room.nonotify(file.uploader), file.size);
       }
     }
     room.chat(mapped.toString());
