@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const {promisify} = require("util");
 
-const uuid = require.main.require("uuid/v1");
+const { v1: uuid } = require('uuid');
 let glob = require.main.require("glob");
 const {ChatCommand} = require.main.require("./commands/command");
 const {PromisePool} = require.main.require("./parrot/pool");
