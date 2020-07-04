@@ -23,10 +23,16 @@ class Youtube extends URLInfo {
   async onurl(room, url) {
     console.debug(url);
     const data = await this.extract(
-      url, this.title, this.duration);
-    console.debug(url, data);
+      {
+        url,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
+        }
+      }, this.title, this.duration);
     let [, title, duration] = data;
     if (!title) {
+      console.error("no title for", url);
+      console.error(data);
       return false;
     }
     [, title] = title;
@@ -48,28 +54,55 @@ class Twitter extends URLInfo {
     super(...args);
     this.needle = /https:\/\/twitter\.com\/(?:.*)\/status\/\d+/;
     this.images = /property="og:image"\s+content="((?:.|[\r\n])*?)"/g;
+    this.videos = /property="og:video:url"\s+content="((?:.|[\r\n])*?)"/g;
     this.title = /property="og:title"\s+content="((?:.|[\r\n])*?)"/;
     this.desc = /property="og:description"\s+content="((?:.|[\r\n])*?)"/;
+    this.tco = /https?:\/\/t\.co\/[a-zA-Z0-9_-]+/g;
   }
 
   async onurl(room, url) {
-    let [text, title, desc] = await this.extract(
-      url, this.title, this.desc);
-    if (!title || !desc) {
+    let [text, title, desc] = await this.extract({
+        url,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
+        }
+      }, this.title, this.desc);
+
+   if (!title || !desc) {
       return false;
     }
     [title, desc] = [decodeHTML(title[1], 2), decodeHTML(desc[1], 2)];
-    desc = desc.substr(1, desc.length - 2);
+    title = title.replace(/on Twitter/, "").trim();
+    desc = desc.substr(1, desc.length - 2).trim();
+    desc = desc.replace(this.tco, "").trim();
     let img;
     const images = [];
     while ((img = this.images.exec(text))) {
       [, img] = img;
-      if (img && !img.includes("profile_images")) {
+      if (img && !img.includes("profile_images") && !img.includes("tw_video_thumb")) {
         images.push(decodeHTML(img));
       }
     }
+    const videos = [];
+    while ((img = this.videos.exec(text))) {
+      [, img] = img;
+      if (img) {
+        try {
+          const u = new URL(decodeHTML(img));
+          u.searchParams.delete("embed");
+          u.searchParams.delete("embed_source");
+          videos.push(u.toString());
+        }
+        catch (ex) {
+          // ignored
+        }
+      }
+    }
     text = null;
-    if (images.length) {
+    if (videos.length) {
+      room.chat(`${title}:\n${desc}\n${videos.join(" ")}`);
+    }
+    else if (images.length) {
       room.chat(`${title}:\n${desc}\n${images.join(" ")}`);
     }
     else {

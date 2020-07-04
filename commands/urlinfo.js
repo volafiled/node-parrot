@@ -40,8 +40,17 @@ class URLInfo extends ChatCommand {
     return false;
   }
 
-  async extract(url, ...args) {
-    const resp = await request.get(url);
+  async extract(url,...args) {
+    if (typeof url === "string") {
+      url = {
+        url,
+        method: "GET",
+      };
+    }
+    if (!url.method) {
+      url.method = "GET";
+    }
+    const resp = await request(url);
     const rv = [resp];
     for (const a of args) {
       rv.push(resp.match(a));
