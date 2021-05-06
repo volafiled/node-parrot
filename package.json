@@ -26,7 +26,7 @@
     "moment-duration-format": "^2.3.2",
     "request": "^2.88.2",
     "request-promise-native": "^1.0.8",
-    "sanitize-html": "^1.27.0",
+    "sanitize-html": "^2.3.2",
     "sqlite": "3",
     "sqlite3": "^5.0.0",
     "tough-cookie": "^4.0.0",
