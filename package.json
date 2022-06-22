@@ -28,7 +28,7 @@
     "request-promise-native": "^1.0.8",
     "sanitize-html": "^1.27.0",
     "sqlite": "3",
-    "sqlite3": "^5.0.0",
+    "sqlite3": "^5.0.3",
     "tough-cookie": "^4.0.0",
     "uuid": "^8.2.0",
     "volapi": "^2.1.0"
